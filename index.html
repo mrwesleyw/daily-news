@@ -111,7 +111,7 @@
   .news-card h3 {
     font-family: "Noto Serif HK", serif;
     font-weight: 600;
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1.5;
     margin-bottom: 8px;
   }
@@ -123,9 +123,10 @@
     color: var(--link-hover);
   }
   .news-card .desc {
-    font-size: 16px;
+    font-size: 18px;
     color: #444;
     line-height: 1.8;
+    white-space: pre-line;
   }
   .footer {
     max-width: 900px;
@@ -222,7 +223,7 @@ async function fetchAll() {
       const items = data.items.slice(0, MAX_PER_FEED).map(item => ({
         title: (item.title || "").trim(),
         link: (item.link || "").trim(),
-        desc: stripHtml(item.content || item.description || "").substring(0, 500),
+        desc: formatDesc(item.content || item.description || ""),
         source: feed.source,
         tag: feed.tag,
       }));
@@ -244,6 +245,25 @@ function stripHtml(s) {
   const el = document.createElement("div");
   el.innerHTML = s;
   return (el.textContent || "").trim();
+}
+
+function formatDesc(s) {
+  // Convert <p>, <br>, <div> into double line breaks, then strip remaining HTML
+  let text = s
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .trim();
+  // Collapse 3+ newlines into 2
+  text = text.replace(/\n{3,}/g, "\n\n");
+  return text;
 }
 
 function render({ grouped, total, errors }) {
