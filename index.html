@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞-v14</title>
+<title>每日新聞-v15</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -547,18 +547,18 @@ async function fetchWeather() {
     const humid = rhr.humidity?.data?.[0];
     if (humid) document.getElementById("w-humid").textContent = humid.value;
 
-    // 降雨（今日預測）
+    // 降雨（今日預測 PSR = Probability of Significant Rain）
     const todayFnd = fnd.weatherForecast?.[0];
-    if (todayFnd?.ForecastChanceOfRain) {
-      document.getElementById("w-rain").textContent = todayFnd.ForecastChanceOfRain;
+    if (todayFnd?.PSR) {
+      document.getElementById("w-rain").textContent = todayFnd.PSR;
+    } else if (todayFnd?.psr) {
+      document.getElementById("w-rain").textContent = todayFnd.psr;
     }
 
-    // 風速
-    const wind = rhr.wind?.data || [];
-    // 用京士柏或第一個有數據的站
-    const windStation = wind.find(s => s.place === "京士柏") || wind.find(s => s.mean?.value) || wind[0];
-    if (windStation?.mean?.value) {
-      document.getElementById("w-wind").textContent = windStation.mean.value + " 公里/時";
+    // 風速（今日預測風力描述）
+    if (todayFnd?.forecastWind) {
+      const windText = todayFnd.forecastWind;
+      document.getElementById("w-wind").textContent = windText.length > 20 ? windText.substring(0, 20) + "⋯" : windText;
     }
 
     // 天氣概況
