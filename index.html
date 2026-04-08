@@ -33,7 +33,7 @@
   .masthead h1 {
     font-family: "Noto Serif HK", serif;
     font-weight: 900;
-    font-size: clamp(26px, 5vw, 36px);
+    font-size: clamp(24px, 5vw, 38px);
     letter-spacing: 4px;
     margin-bottom: 6px;
   }
@@ -163,6 +163,34 @@
     border-color: var(--accent);
     color: var(--accent);
   }
+
+  .source-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 4px;
+  }
+  .source-tab {
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .source-tab:hover {
+    border-color: var(--link);
+    color: var(--link);
+  }
+  .source-tab.active {
+    background: var(--link);
+    border-color: var(--link);
+    color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -282,12 +310,32 @@ function render({ grouped, total, errors }) {
   status.textContent = statusText;
 
   let html = "";
+  let sectionIdx = 0;
   TAG_ORDER.forEach(tag => {
     if (!grouped[tag] || grouped[tag].length === 0) return;
-    html += `<div class="section-label">${tag}</div>`;
-    html += `<div class="news-list">`;
+    const sid = "section-" + sectionIdx;
+    sectionIdx++;
+
+    // Find unique sources in this section
+    const sources = [];
     grouped[tag].forEach(a => {
-      html += `<div class="news-card">
+      if (!sources.includes(a.source)) sources.push(a.source);
+    });
+
+    html += `<div class="section-label">${tag}</div>`;
+
+    // Tabs
+    html += `<div class="source-tabs" data-section="${sid}">`;
+    html += `<button class="source-tab active" onclick="filterSource('${sid}','全部',this)">全部</button>`;
+    sources.forEach(src => {
+      html += `<button class="source-tab" onclick="filterSource('${sid}','${esc(src)}',this)">${esc(src)}</button>`;
+    });
+    html += `</div>`;
+
+    // News cards
+    html += `<div class="news-list" id="${sid}">`;
+    grouped[tag].forEach(a => {
+      html += `<div class="news-card" data-source="${esc(a.source)}">
         <div class="source">${esc(a.source)}</div>
         <h3><a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.title)}</a></h3>
         ${a.desc ? `<div class="desc">${esc(a.desc)}</div>` : ""}
@@ -298,6 +346,23 @@ function render({ grouped, total, errors }) {
 
   content.innerHTML = html;
   footer.style.display = "block";
+}
+
+function filterSource(sectionId, source, btn) {
+  // Update active tab
+  const tabs = btn.parentElement.querySelectorAll(".source-tab");
+  tabs.forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+
+  // Show/hide cards
+  const cards = document.getElementById(sectionId).querySelectorAll(".news-card");
+  cards.forEach(card => {
+    if (source === "全部" || card.getAttribute("data-source") === source) {
+      card.style.display = "";
+    } else {
+      card.style.display = "none";
+    }
+  });
 }
 
 function esc(s) {
