@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞-v17</title>
+<title>每日新聞-v18</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -530,39 +530,20 @@ fetchAll().then(render).catch(err => {
 // ===== 香港天氣 =====
 async function fetchWeather() {
   try {
-    const [rhrRes, fndRes] = await Promise.all([
+    const [rhrRes, fndRes, flwRes] = await Promise.all([
       fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc"),
       fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=tc"),
+      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=tc"),
     ]);
     const rhr = await rhrRes.json();
     const fnd = await fndRes.json();
+    const flw = await flwRes.json();
 
-    // 天氣概況（從天文台 RSS 拎，獨立抓，失敗唔影響其他）
-    try {
-      const flwRssRes = await fetch("https://rss.weather.gov.hk/rss/LocalWeatherForecast_uc.xml");
-      const flwXml = await flwRssRes.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(flwXml, "text/xml");
-      const descEl = doc.querySelector("item > description");
-      if (descEl) {
-        let descText = descEl.textContent
-          .replace(/<br\s*\/?>/gi, "\n")
-          .replace(/<[^>]*>/g, "")
-          .trim();
-        document.getElementById("w-desc").style.whiteSpace = "pre-line";
-        document.getElementById("w-desc").textContent = descText;
-      }
-    } catch(e) {
-      // RSS 失敗就用 API fallback
-      try {
-        const flwRes = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=tc");
-        const flw = await flwRes.json();
-        const desc = flw.forecastDesc || flw.generalSituation || "";
-        if (desc) {
-          document.getElementById("w-desc").style.whiteSpace = "pre-line";
-          document.getElementById("w-desc").textContent = desc;
-        }
-      } catch(e2) { /* both failed */ }
+    // 天氣概況
+    const desc = flw.forecastDesc || flw.generalSituation || "";
+    if (desc) {
+      document.getElementById("w-desc").style.whiteSpace = "pre-line";
+      document.getElementById("w-desc").textContent = desc;
     }
 
     // 溫度（香港天文台站）
