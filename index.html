@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每日新聞 — 香港 & IT 科技</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f5f0e8;
+    --rule: #c4b9a4;
+    --accent: #b22222;
+    --link: #1a3c6e;
+    --link-hover: #b22222;
+    --muted: #7a7062;
+    --card-bg: rgba(255,255,255,0.45);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .masthead {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 0;
+    text-align: center;
+  }
+  .masthead h1 {
+    font-family: "Noto Serif HK", serif;
+    font-weight: 900;
+    font-size: clamp(28px, 5vw, 42px);
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+  }
+  .masthead .dateline {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    font-weight: 300;
+  }
+  .rule-double {
+    max-width: 900px;
+    margin: 16px auto;
+    border: none;
+    border-top: 3px double var(--rule);
+  }
+  .status-bar {
+    max-width: 900px;
+    margin: 16px auto;
+    padding: 0 24px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .status-bar .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+  .section-label {
+    font-family: "Noto Serif HK", serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--accent);
+    margin: 32px 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+  }
+  .news-list {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .news-card {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 16px 20px;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .news-card:hover {
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .news-card .source {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .news-card h3 {
+    font-family: "Noto Serif HK", serif;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .news-card h3 a {
+    color: var(--link);
+    text-decoration: none;
+  }
+  .news-card h3 a:hover {
+    color: var(--link-hover);
+  }
+  .news-card .desc {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.8;
+  }
+  .footer {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 20px 24px 32px;
+    border-top: 1px solid var(--rule);
+  }
+  .error-msg {
+    background: #fff3f3;
+    border: 1px solid #e8c4c4;
+    border-radius: 4px;
+    padding: 12px 16px;
+    color: #8b3a3a;
+    font-size: 13px;
+    margin: 8px 0;
+  }
+  .btn-refresh {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 8px 20px;
+    font-size: 13px;
+    border: 1px solid var(--rule);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-refresh:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>每日新聞</h1>
+  <div class="dateline" id="dateline"></div>
+</div>
+<hr class="rule-double">
+<div class="status-bar" id="status"><span class="spinner"></span>正在載入新聞⋯⋯</div>
+<div class="container" id="content"></div>
+<div class="footer" id="footer" style="display:none;">
+  <button class="btn-refresh" onclick="location.reload()">🔄 重新載入</button>
+  <div style="margin-top:10px;">打開此檔案即自動抓取最新 RSS 新聞</div>
+</div>
+
+<script>
+const FEEDS = [
+  // 香港中文（排最頂）
+  { url: "https://news.mingpao.com/rss/ins/s00001.xml", source: "明報",          tag: "📰 香港中文" },
+  { url: "https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml", source: "香港電台",  tag: "📰 香港中文" },
+  { url: "https://rthk.hk/rthk/news/rss/c_expressnews_greaterchina.xml", source: "港台兩岸", tag: "📰 香港中文" },
+
+  // 香港英文
+  { url: "https://www.scmp.com/rss/91/feed",            source: "SCMP",        tag: "🇭🇰 香港英文" },
+
+  // IT 科技
+  { url: "https://feeds.arstechnica.com/arstechnica/index",      source: "Ars Technica",     tag: "🖥️ IT 科技" },
+  { url: "https://techcrunch.com/feed/",                          source: "TechCrunch",       tag: "🖥️ IT 科技" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml", source: "NYT",        tag: "🖥️ IT 科技" },
+  { url: "https://feeds.bbci.co.uk/news/technology/rss.xml",     source: "BBC",              tag: "🖥️ IT 科技" },
+  { url: "https://www.wired.com/feed/rss",                       source: "Wired",            tag: "🖥️ IT 科技" },
+  { url: "https://9to5mac.com/feed/",                             source: "9to5Mac",          tag: "🖥️ IT 科技" },
+  { url: "https://www.bleepingcomputer.com/feed/",               source: "BleepingComputer", tag: "🖥️ IT 科技" },
+  { url: "https://www.zdnet.com/news/rss.xml",                   source: "ZDNet",            tag: "🖥️ IT 科技" },
+];
+
+const TAG_ORDER = ["📰 香港中文", "🇭🇰 香港英文", "🖥️ IT 科技"];
+const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+const MAX_PER_FEED = 12;
+
+const now = new Date();
+const days = ["日", "一", "二", "三", "四", "五", "六"];
+document.getElementById("dateline").textContent =
+  `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日（星期${days[now.getDay()]}）`;
+
+async function fetchAll() {
+  const grouped = {};
+  let total = 0, errors = 0;
+
+  const promises = FEEDS.map(async (feed) => {
+    try {
+      const res = await fetch(PROXY + encodeURIComponent(feed.url));
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (data.status !== "ok" || !data.items) throw new Error("Parse error");
+
+      const items = data.items.slice(0, MAX_PER_FEED).map(item => ({
+        title: (item.title || "").trim(),
+        link: (item.link || "").trim(),
+        desc: stripHtml(item.content || item.description || "").substring(0, 500),
+        source: feed.source,
+        tag: feed.tag,
+      }));
+
+      if (!grouped[feed.tag]) grouped[feed.tag] = [];
+      grouped[feed.tag].push(...items);
+      total += items.length;
+    } catch (e) {
+      console.warn("Feed failed:", feed.url, e.message);
+      errors++;
+    }
+  });
+
+  await Promise.all(promises);
+  return { grouped, total, errors };
+}
+
+function stripHtml(s) {
+  const el = document.createElement("div");
+  el.innerHTML = s;
+  return (el.textContent || "").trim();
+}
+
+function render({ grouped, total, errors }) {
+  const status = document.getElementById("status");
+  const content = document.getElementById("content");
+  const footer = document.getElementById("footer");
+
+  if (total === 0) {
+    status.innerHTML = '<div class="error-msg">無法載入新聞，請檢查網絡連線後重新整理。</div>';
+    footer.style.display = "block";
+    return;
+  }
+
+  let statusText = `共載入 ${total} 則新聞`;
+  if (errors > 0) statusText += `（${errors} 個來源無法連線）`;
+  status.textContent = statusText;
+
+  let html = "";
+  TAG_ORDER.forEach(tag => {
+    if (!grouped[tag] || grouped[tag].length === 0) return;
+    html += `<div class="section-label">${tag}</div>`;
+    html += `<div class="news-list">`;
+    grouped[tag].forEach(a => {
+      html += `<div class="news-card">
+        <div class="source">${esc(a.source)}</div>
+        <h3><a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.title)}</a></h3>
+        ${a.desc ? `<div class="desc">${esc(a.desc)}</div>` : ""}
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  content.innerHTML = html;
+  footer.style.display = "block";
+}
+
+function esc(s) {
+  const el = document.createElement("span");
+  el.textContent = s;
+  return el.innerHTML;
+}
+
+fetchAll().then(render).catch(err => {
+  document.getElementById("status").innerHTML =
+    '<div class="error-msg">載入失敗：' + err.message + '</div>';
+});
+</script>
+</body>
+</html>
