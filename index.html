@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞-v18</title>
+<title>每日新聞-v19</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -539,11 +539,15 @@ async function fetchWeather() {
     const fnd = await fndRes.json();
     const flw = await flwRes.json();
 
-    // 天氣概況
-    const desc = flw.forecastDesc || flw.generalSituation || "";
-    if (desc) {
+    // 天氣概況（完整顯示）
+    const descParts = [];
+    if (flw.generalSituation) descParts.push(flw.generalSituation);
+    if (flw.forecastPeriod) descParts.push("\n" + flw.forecastPeriod + "：");
+    if (flw.forecastDesc) descParts.push(flw.forecastDesc);
+    if (flw.outlook) descParts.push("\n展望：" + flw.outlook);
+    if (descParts.length > 0) {
       document.getElementById("w-desc").style.whiteSpace = "pre-line";
-      document.getElementById("w-desc").textContent = desc;
+      document.getElementById("w-desc").textContent = descParts.join("");
     }
 
     // 溫度（香港天文台站）
