@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞(v4)</title>
+<title>每日新聞(V5)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -235,7 +235,7 @@ const FEEDS = [
 ];
 
 const TAG_ORDER = ["📰 香港中文", "🇭🇰 香港英文", "🖥️ IT 科技"];
-const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+const PROXY = "https://api.allorigins.win/raw?url=";
 const MAX_PER_FEED = 12;
 
 const now = new Date();
@@ -251,17 +251,52 @@ async function fetchAll() {
     try {
       const res = await fetch(PROXY + encodeURIComponent(feed.url));
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      if (data.status !== "ok" || !data.items) throw new Error("Parse error");
+      const text = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "text/xml");
 
-      const items = data.items.slice(0, MAX_PER_FEED).map(item => ({
-        title: (item.title || "").trim(),
-        link: (item.link || "").trim(),
-        desc: formatDesc(item.content || item.description || ""),
-        source: feed.source,
-        tag: feed.tag,
-        pubDate: item.pubDate || "",
-      }));
+      // Check for parse error
+      if (doc.querySelector("parsererror")) throw new Error("XML parse error");
+
+      let items = [];
+
+      // RSS 2.0
+      const rssItems = doc.querySelectorAll("channel > item");
+      if (rssItems.length > 0) {
+        rssItems.forEach((el, i) => {
+          if (i >= MAX_PER_FEED) return;
+          items.push({
+            title: (el.querySelector("title")?.textContent || "").trim(),
+            link: (el.querySelector("link")?.textContent || "").trim(),
+            desc: formatDesc(
+              el.querySelector("content\\:encoded")?.textContent ||
+              el.querySelector("description")?.textContent || ""
+            ),
+            source: feed.source,
+            tag: feed.tag,
+            pubDate: el.querySelector("pubDate")?.textContent || "",
+          });
+        });
+      } else {
+        // Atom
+        const entries = doc.querySelectorAll("feed > entry");
+        entries.forEach((el, i) => {
+          if (i >= MAX_PER_FEED) return;
+          const linkEl = el.querySelector('link[rel="alternate"]') || el.querySelector("link");
+          items.push({
+            title: (el.querySelector("title")?.textContent || "").trim(),
+            link: linkEl?.getAttribute("href") || "",
+            desc: formatDesc(
+              el.querySelector("content")?.textContent ||
+              el.querySelector("summary")?.textContent || ""
+            ),
+            source: feed.source,
+            tag: feed.tag,
+            pubDate: el.querySelector("published")?.textContent ||
+                     el.querySelector("updated")?.textContent || "",
+          });
+        });
+      }
 
       if (!grouped[feed.tag]) grouped[feed.tag] = [];
       grouped[feed.tag].push(...items);
