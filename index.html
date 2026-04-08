@@ -570,7 +570,7 @@ async function fetchWeather() {
     // 風速（今日預測風力描述）
     if (todayFnd?.forecastWind) {
       const windText = todayFnd.forecastWind;
-      document.getElementById("w-wind").textContent = windText.length > 20 ? windText.substring(0, 20) + "⋯" : windText;
+      document.getElementById("w-wind").textContent = windText.length > 15 ? windText.substring(0, 15) + "⋯" : windText;
     }
 
     // 天氣圖標
