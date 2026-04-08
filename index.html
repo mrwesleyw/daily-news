@@ -33,12 +33,12 @@
   .masthead h1 {
     font-family: "Noto Serif HK", serif;
     font-weight: 900;
-    font-size: clamp(24px, 5vw, 38px);
+    font-size: clamp(28px, 5vw, 42px);
     letter-spacing: 4px;
     margin-bottom: 6px;
   }
   .masthead .dateline {
-    font-size: 15px;
+    font-size: 13px;
     color: var(--muted);
     letter-spacing: 1px;
     font-weight: 300;
@@ -111,7 +111,7 @@
   .news-card h3 {
     font-family: "Noto Serif HK", serif;
     font-weight: 600;
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1.5;
     margin-bottom: 8px;
   }
@@ -122,8 +122,14 @@
   .news-card h3 a:hover {
     color: var(--link-hover);
   }
+  .pub-time {
+    font-family: "Noto Sans HK", sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+  }
   .news-card .desc {
-    font-size: 18px;
+    font-size: 16px;
     color: #444;
     line-height: 1.8;
     white-space: pre-line;
@@ -254,6 +260,7 @@ async function fetchAll() {
         desc: formatDesc(item.content || item.description || ""),
         source: feed.source,
         tag: feed.tag,
+        pubDate: item.pubDate || "",
       }));
 
       if (!grouped[feed.tag]) grouped[feed.tag] = [];
@@ -337,7 +344,7 @@ function render({ grouped, total, errors }) {
     grouped[tag].forEach(a => {
       html += `<div class="news-card" data-source="${esc(a.source)}">
         <div class="source">${esc(a.source)}</div>
-        <h3><a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.title)}</a></h3>
+        <h3><a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.title)}</a>${a.pubDate ? ' <span class="pub-time">(' + fmtDate(a.pubDate) + ')</span>' : ''}</h3>
         ${a.desc ? `<div class="desc">${esc(a.desc)}</div>` : ""}
       </div>`;
     });
@@ -369,6 +376,14 @@ function esc(s) {
   const el = document.createElement("span");
   el.textContent = s;
   return el.innerHTML;
+}
+
+function fmtDate(s) {
+  try {
+    const d = new Date(s);
+    if (isNaN(d)) return "";
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  } catch(e) { return ""; }
 }
 
 fetchAll().then(render).catch(err => {
