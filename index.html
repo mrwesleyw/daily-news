@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞-v15</title>
+<title>每日新聞-v16</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -236,10 +236,11 @@
   .weather-desc {
     font-size: 15px;
     color: #444;
-    margin-left: auto;
-  }
-  @media (max-width: 640px) {
-    .weather-desc { margin-left: 0; width: 100%; }
+    line-height: 1.7;
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
   }
 </style>
 </head>
@@ -529,14 +530,29 @@ fetchAll().then(render).catch(err => {
 // ===== 香港天氣 =====
 async function fetchWeather() {
   try {
-    const [rhrRes, flwRes, fndRes] = await Promise.all([
+    const [rhrRes, fndRes, flwRssRes] = await Promise.all([
       fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc"),
-      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=tc"),
       fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=tc"),
+      fetch("https://rss.weather.gov.hk/rss/LocalWeatherForecast_uc.xml"),
     ]);
     const rhr = await rhrRes.json();
-    const flw = await flwRes.json();
     const fnd = await fndRes.json();
+
+    // 天氣概況（從天文台 RSS 拎）
+    try {
+      const flwXml = await flwRssRes.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(flwXml, "text/xml");
+      const descEl = doc.querySelector("item > description");
+      if (descEl) {
+        let descText = descEl.textContent
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<[^>]*>/g, "")
+          .trim();
+        document.getElementById("w-desc").style.whiteSpace = "pre-line";
+        document.getElementById("w-desc").textContent = descText;
+      }
+    } catch(e) { /* RSS failed, skip desc */ }
 
     // 溫度（香港天文台站）
     const tempData = rhr.temperature?.data || [];
@@ -560,11 +576,6 @@ async function fetchWeather() {
       const windText = todayFnd.forecastWind;
       document.getElementById("w-wind").textContent = windText.length > 20 ? windText.substring(0, 20) + "⋯" : windText;
     }
-
-    // 天氣概況
-    const desc = flw.generalSituation || flw.forecastDesc || "";
-    const shortDesc = desc.length > 60 ? desc.substring(0, 60) + "⋯" : desc;
-    if (shortDesc) document.getElementById("w-desc").textContent = shortDesc;
 
     // 天氣圖標
     const iconCode = rhr.icon?.[0];
