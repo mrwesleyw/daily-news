@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞-v12</title>
+<title>每日新聞-v14</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -197,6 +197,50 @@
     border-color: var(--link);
     color: #fff;
   }
+
+  .weather-bar {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 14px 24px;
+  }
+  .weather-card {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .weather-icon {
+    font-size: 36px;
+    line-height: 1;
+  }
+  .weather-temp {
+    font-family: "Noto Serif HK", serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .weather-details {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .weather-details span {
+    white-space: nowrap;
+  }
+  .weather-desc {
+    font-size: 15px;
+    color: #444;
+    margin-left: auto;
+  }
+  @media (max-width: 640px) {
+    .weather-desc { margin-left: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -206,6 +250,18 @@
   <div class="dateline" id="dateline"></div>
 </div>
 <hr class="rule-double">
+<div class="weather-bar" id="weather-bar" style="display:none;">
+  <div class="weather-card">
+    <div class="weather-icon" id="w-icon">☀️</div>
+    <div class="weather-temp" id="w-temp">--°C</div>
+    <div class="weather-details">
+      <span>💧 濕度：<b id="w-humid">--</b>%</span>
+      <span>🌧️ 降雨：<b id="w-rain">--</b></span>
+      <span>🌬️ 風速：<b id="w-wind">--</b></span>
+    </div>
+    <div class="weather-desc" id="w-desc">--</div>
+  </div>
+</div>
 <div class="status-bar" id="status"><span class="spinner"></span>正在載入新聞⋯⋯</div>
 <div class="container" id="content"></div>
 <div class="footer" id="footer" style="display:none;">
@@ -220,7 +276,6 @@ const FEEDS = [
   { url: "https://rthk9.rthk.hk/rthk/news/rss/c_expressnews_clocal.xml", source: "香港電台",  tag: "📰 香港中文" },
   { url: "https://rthk9.rthk.hk/rthk/news/rss/c_expressnews_greaterchina.xml", source: "港台兩岸", tag: "📰 香港中文" },
   { url: "https://www.bbc.com/zhongwen/trad/index.xml", source: "BBC中文",    tag: "📰 香港中文" },
-  { url: "https://rsshub.app/hk01/channel/6", source: "香港01突發",    tag: "📰 香港中文" },
 
   // 香港英文
   { url: "https://www.scmp.com/rss/91/feed",            source: "SCMP",        tag: "🇭🇰 香港英文" },
@@ -470,6 +525,64 @@ fetchAll().then(render).catch(err => {
   document.getElementById("status").innerHTML =
     '<div class="error-msg">載入失敗：' + err.message + '</div>';
 });
+
+// ===== 香港天氣 =====
+async function fetchWeather() {
+  try {
+    const [rhrRes, flwRes, fndRes] = await Promise.all([
+      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc"),
+      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=tc"),
+      fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=tc"),
+    ]);
+    const rhr = await rhrRes.json();
+    const flw = await flwRes.json();
+    const fnd = await fndRes.json();
+
+    // 溫度（香港天文台站）
+    const tempData = rhr.temperature?.data || [];
+    const hkoTemp = tempData.find(s => s.place === "香港天文台") || tempData[0];
+    if (hkoTemp) document.getElementById("w-temp").textContent = hkoTemp.value + "°C";
+
+    // 濕度
+    const humid = rhr.humidity?.data?.[0];
+    if (humid) document.getElementById("w-humid").textContent = humid.value;
+
+    // 降雨（今日預測）
+    const todayFnd = fnd.weatherForecast?.[0];
+    if (todayFnd?.ForecastChanceOfRain) {
+      document.getElementById("w-rain").textContent = todayFnd.ForecastChanceOfRain;
+    }
+
+    // 風速
+    const wind = rhr.wind?.data || [];
+    // 用京士柏或第一個有數據的站
+    const windStation = wind.find(s => s.place === "京士柏") || wind.find(s => s.mean?.value) || wind[0];
+    if (windStation?.mean?.value) {
+      document.getElementById("w-wind").textContent = windStation.mean.value + " 公里/時";
+    }
+
+    // 天氣概況
+    const desc = flw.generalSituation || flw.forecastDesc || "";
+    const shortDesc = desc.length > 60 ? desc.substring(0, 60) + "⋯" : desc;
+    if (shortDesc) document.getElementById("w-desc").textContent = shortDesc;
+
+    // 天氣圖標
+    const iconCode = rhr.icon?.[0];
+    const iconMap = {
+      50:'☀️',51:'☀️',52:'🌤️',53:'⛅',54:'🌥️',60:'🌥️',61:'🌥️',62:'🌧️',63:'🌧️',64:'⛈️',
+      65:'⛈️',70:'🌤️',71:'🌤️',72:'🌤️',73:'🌤️',74:'🌤️',75:'🌤️',76:'🌥️',77:'🌥️',
+      80:'🌬️',81:'🌫️',82:'🌧️',83:'🌧️',84:'🌧️',85:'⛈️',90:'🌡️',91:'🌡️',92:'❄️',93:'❄️'
+    };
+    if (iconCode) {
+      document.getElementById("w-icon").textContent = iconMap[iconCode] || "🌤️";
+    }
+
+    document.getElementById("weather-bar").style.display = "";
+  } catch(e) {
+    console.warn("Weather failed:", e.message);
+  }
+}
+fetchWeather();
 </script>
 </body>
 </html>
