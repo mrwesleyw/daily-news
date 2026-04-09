@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>每日新聞-v19</title>
+<title>每日新聞-v20</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@600;900&family=Noto+Sans+HK:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -277,6 +277,7 @@ const FEEDS = [
   { url: "https://rthk9.rthk.hk/rthk/news/rss/c_expressnews_clocal.xml", source: "香港電台",  tag: "📰 香港中文" },
   { url: "https://rthk9.rthk.hk/rthk/news/rss/c_expressnews_greaterchina.xml", source: "港台兩岸", tag: "📰 香港中文" },
   { url: "https://www.bbc.com/zhongwen/trad/index.xml", source: "BBC中文",    tag: "📰 香港中文" },
+  { url: "https://rsshub.app/stheadline/std/breaking-news/%E7%AA%81%E7%99%BC", source: "星島突發",  tag: "📰 香港中文" },
 
   // 香港英文
   { url: "https://www.scmp.com/rss/91/feed",            source: "SCMP",        tag: "🇭🇰 香港英文" },
@@ -570,7 +571,7 @@ async function fetchWeather() {
     // 風速（今日預測風力描述）
     if (todayFnd?.forecastWind) {
       const windText = todayFnd.forecastWind;
-      document.getElementById("w-wind").textContent = windText.length > 15 ? windText.substring(0, 15) + "⋯" : windText;
+      document.getElementById("w-wind").textContent = windText.length > 20 ? windText.substring(0, 20) + "⋯" : windText;
     }
 
     // 天氣圖標
